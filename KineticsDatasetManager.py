@@ -54,7 +54,7 @@ https://ffmpeg.org/ffmpeg-utils.html#toc-Examples
 
 
 # import the libraries we need
-import os, sys
+import os, sys, time
 from natsort import natsorted
 from tqdm import tqdm as tqdm
 import shutil
@@ -68,11 +68,12 @@ from termcolor import colored
 class KineticsDatasetManager(object):
 
     # constructor
-    def __init__(self,destination_path=None,dataset_type=None, cookies_path=None):
+    def __init__(self,destination_path=None,dataset_type=None, cookies_path=None, sleep=None):
 
         self.destination_path = destination_path
         self.dataset_type = str(dataset_type).lower()
         self.cookies_path = cookies_path
+        self.sleep = sleep
 
         # the dataset type can never be empty
         if self.dataset_type is None:
@@ -362,6 +363,10 @@ class KineticsDatasetManager(object):
                             Path(vid_path).touch()
                     else:
                         msg += colored("[DONE]", 'green')
+
+                    # Wait before next download.
+                    if self.sleep:
+                        time.sleep(self.sleep)
 
                     #os.system("ffmpeg -hide_banner -ss "+start_time+" -i $(youtube-dl -f 18 --get-url "+youtube_link+") -t 10 -c:v copy -c:a copy '"+vid_path+"'")
 

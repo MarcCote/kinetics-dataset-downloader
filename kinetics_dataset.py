@@ -44,11 +44,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--destination", type=str, default=None, help="Enter destination of where files should be extracted to")
     ap.add_argument("--cookies", type=str, default=None, help="Enter destination to a cookies.txt file")
+    ap.add_argument("--sleep", type=float, default=None, help="Sleep duration between downloads (in secondes).")
     ap.add_argument("-t", "--type", type=str, required=True, default=None, help="Enter train, validation or test")
     args = vars(ap.parse_args())
 
     # instantiate the manager class
-    kinetics_manager = KineticsDatasetManager(args["destination"], args["type"], args["cookies"])
+    kinetics_manager = KineticsDatasetManager(args["destination"], args["type"], args["cookies"], args["sleep"])
 
     kinetics_manager.download_video()
 
