@@ -68,10 +68,11 @@ from termcolor import colored
 class KineticsDatasetManager(object):
 
     # constructor
-    def __init__(self,destination_path=None,dataset_type=None):
+    def __init__(self,destination_path=None,dataset_type=None, cookies_path=None):
 
         self.destination_path = destination_path
         self.dataset_type = str(dataset_type).lower()
+        self.cookies_path = cookies_path
 
         # the dataset type can never be empty
         if self.dataset_type is None:
@@ -284,6 +285,8 @@ class KineticsDatasetManager(object):
             #print(start_from, " --> ",end_at  )
             print("")
 
+        # If cookies.txt is provided, build option for youtube-dl.
+        cookies_opt = "--cookies '{}'".format(self.cookies_path) if self.cookies_path else ""
 
         #number may not be right but just give us a rough estimate
         video_counter = 0
@@ -338,22 +341,19 @@ class KineticsDatasetManager(object):
                     # use quotation to cater for special charaters such as whitesspace and () in file or folder name
                     # REF: https://stackoverflow.com/q/22766111/3901871
                     # REF: zsnhttps://ffmpeg.org/ffmpeg-utils.html#toc-Examples
-                    # cmd = ("test -f 'drive/My Drive/Kinetics/{vid_path}' ||"
-                    # 	   " ffmpeg -hide_banner -ss 166 -i"
-                    # 	   " $(youtube-dl --cookies 'drive/My Drive/Kinetics/cookies.txt' -f 18 --get-url {youtube_link} || touch 'drive/My Drive/Kinetics/{vid_path}')"
-                    # 	   " -t 10 -c:v copy -c:a copy 'drive/My Drive/Kinetics/{vid_path}'"
-                    # 	   ).format(vid_path=vid_path, youtube_link=youtube_link)
                     cmd = ("ffmpeg -hide_banner -ss 166 -i"
-                           " $(youtube-dl --cookies '{cookies_path}' -f 18 --get-url {youtube_link})"
+                           " $(youtube-dl {cookies_opt} -f 18 --get-url {youtube_link})"
                            " -t 10 -c:v copy -c:a copy '{vid_path}'"
-                           ).format(vid_path=vid_path, cookies_path=cookies_path, youtube_link=youtube_link)
+                           ).format(vid_path=vid_path, cookies_opt=cookies_opt, youtube_link=youtube_link)
 
                     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                     stdout, stderr = p.communicate()
 
                     if p.returncode != 0:
                         if "Too Many Requests" in (stdout.decode("cp1252") + stderr.decode("cp1252")):
-                            print(colored("[FAIL]", 'red'))
+                            msg += colored("[FAIL]", 'red')
+                            pbar.write(msg)
+                            pbar.close()
                             print(colored("HTTP Error 429: Too many requests. Stopping now.", 'red'))
                             sys.exit(1)
                         else:
