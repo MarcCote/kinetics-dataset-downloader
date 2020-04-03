@@ -13,9 +13,13 @@ This script downloads the Kinetics-600 dataset according to author guidelines at
 - [X]  Python 3
 
 - [X]  tqdm
+
+- [X]  natsort
+
 ```
-pip3 install tqdm
+pip3 install -r requirements.txt
 ```
+
 
 - [X] youtube-dl
 ```
@@ -48,4 +52,4 @@ From the above exampple, the final destination folder may look like
    |-- test
    |-- holdout
 ```
- 
+
