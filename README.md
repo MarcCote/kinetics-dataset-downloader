@@ -16,6 +16,8 @@ This script downloads the Kinetics-600 dataset according to author guidelines at
 
 - [X]  natsort
 
+- [X]  termcolor
+
 ```
 pip3 install -r requirements.txt
 ```

@@ -58,6 +58,10 @@ import os, sys
 from natsort import natsorted
 from tqdm import tqdm as tqdm
 import shutil
+import subprocess
+from pathlib import Path
+
+from termcolor import colored
 
 
 # Class begins
@@ -295,7 +299,8 @@ class KineticsDatasetManager(object):
             sp = "./"
 
             # loop through the lines to downlad the videos
-            for line in tqdm(lines[start_from:end_at]):
+            pbar = tqdm(lines[start_from:end_at])
+            for line in pbar:
                 coumn = str(line).split(",")
 
                 # there is no label for holdout data
@@ -310,7 +315,8 @@ class KineticsDatasetManager(object):
                     start_time = coumn[2]
 
                 # create the directory according to the label name
-                dir_name = os.path.join(self.destination_path,str(data_lable)) # make it an absolute path
+                dir_name = os.path.join(self.destination_path, str(data_lable)) # make it an absolute path
+                cookies_path = os.path.join(self.destination_path, "cookies.txt") # make it an absolute path
 
                 # if the directory does not already exist
                 # then create a new one
@@ -321,21 +327,51 @@ class KineticsDatasetManager(object):
                 vid_name = "vid_"+youtube_id+".avi"
                 vid_path = os.path.join(dir_name,vid_name)
 
+                # create the youtube link
+                youtube_link = "https://www.youtube.com/watch?v="+youtube_id
+                msg = youtube_link + " "
+                pbar.set_description(youtube_link)
 
                 # if the video does not exist, then download it
                 if os.path.exists(vid_path) is False:
-
-                    # create the youtube link
-                    youtube_link = "https://www.youtube.com/watch?v="+youtube_id
-
                     # use youtube-dl and ffmpeg to download videos
                     # use quotation to cater for special charaters such as whitesspace and () in file or folder name
                     # REF: https://stackoverflow.com/q/22766111/3901871
                     # REF: zsnhttps://ffmpeg.org/ffmpeg-utils.html#toc-Examples
-                    os.system("ffmpeg -hide_banner -ss "+start_time+" -i $(youtube-dl -f 18 --get-url "+youtube_link+") -t 10 -c:v copy -c:a copy '"+vid_path+"'")
+                    # cmd = ("test -f 'drive/My Drive/Kinetics/{vid_path}' ||"
+                    # 	   " ffmpeg -hide_banner -ss 166 -i"
+                    # 	   " $(youtube-dl --cookies 'drive/My Drive/Kinetics/cookies.txt' -f 18 --get-url {youtube_link} || touch 'drive/My Drive/Kinetics/{vid_path}')"
+                    # 	   " -t 10 -c:v copy -c:a copy 'drive/My Drive/Kinetics/{vid_path}'"
+                    # 	   ).format(vid_path=vid_path, youtube_link=youtube_link)
+                    cmd = ("ffmpeg -hide_banner -ss 166 -i"
+                           " $(youtube-dl --cookies '{cookies_path}' -f 18 --get-url {youtube_link})"
+                           " -t 10 -c:v copy -c:a copy '{vid_path}'"
+                           ).format(vid_path=vid_path, cookies_path=cookies_path, youtube_link=youtube_link)
+
+                    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    stdout, stderr = p.communicate()
+
+                    if p.returncode != 0:
+                        if "Too Many Requests" in (stdout.decode("cp1252") + stderr.decode("cp1252")):
+                            print(colored("[FAIL]", 'red'))
+                            print(colored("HTTP Error 429: Too many requests. Stopping now.", 'red'))
+                            sys.exit(1)
+                        else:
+                            # Missing video, create an empty video file to skip it next time.
+                            msg += colored("[FAIL] - " + stderr.decode("cp1252"), 'yellow')
+                            Path(vid_path).touch()
+                    else:
+                        msg += colored("[DONE]", 'green')
+
+                    #os.system("ffmpeg -hide_banner -ss "+start_time+" -i $(youtube-dl -f 18 --get-url "+youtube_link+") -t 10 -c:v copy -c:a copy '"+vid_path+"'")
+
                     video_counter +=1
-                    print(video_counter, " videos downloaded")
+                    # print(video_counter, " videos downloaded")
 
                 else:
-                    print("Skipped: ",vid_path)
+                    if Path(vid_path).stat().st_size > 0:
+                        msg += colored("[SKIP] - DOWNLOADED", 'green')
+                    else:
+                        msg += colored("[SKIP] - EMPTY", 'yellow')
 
+                pbar.write(msg)
