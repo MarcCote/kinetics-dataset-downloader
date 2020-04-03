@@ -68,12 +68,14 @@ from termcolor import colored
 class KineticsDatasetManager(object):
 
     # constructor
-    def __init__(self,destination_path=None,dataset_type=None, cookies_path=None, sleep=None):
+    def __init__(self,destination_path=None,dataset_type=None, cookies_path=None, sleep=None, class_range=None, unattended=None):
 
         self.destination_path = destination_path
         self.dataset_type = str(dataset_type).lower()
         self.cookies_path = cookies_path
         self.sleep = sleep
+        self.range = class_range
+        self.unattended = unattended
 
         # the dataset type can never be empty
         if self.dataset_type is None:
@@ -93,31 +95,29 @@ class KineticsDatasetManager(object):
 
         # chek if destination exists. if it does, delete and create new one
         if os.path.exists(self.destination_path):
-            user_input = input("Destination path '{}' already exists. Do you want to delete and recreate it? y or n: ".format(self.destination_path))
-            print("")
-
-            if str(user_input).lower() == 'y':
-                print("Deleting and re-creating {}...".format(self.destination_path))
-                print("")
-                shutil.rmtree(self.destination_path)
-                os.makedirs(self.destination_path)
-
-            elif str(user_input).lower() == 'n':
-                print("Keeping '{}' as the default...".format(self.destination_path))
+            if not self.unattended:
+                user_input = input("Destination path '{}' already exists. Do you want to delete and recreate it? y or n: ".format(self.destination_path))
                 print("")
 
-            else:
-                print("Invalid {} option. Program exiting!".format(user_input))
-                sys.exit()
+                if str(user_input).lower() == 'y':
+                    print("Deleting and re-creating {}...".format(self.destination_path))
+                    print("")
+                    shutil.rmtree(self.destination_path)
+                    os.makedirs(self.destination_path)
+
+                elif str(user_input).lower() == 'n':
+                    print("Keeping '{}' as the default...".format(self.destination_path))
+                    print("")
+
+                else:
+                    print("Invalid {} option. Program exiting!".format(user_input))
+                    sys.exit()
 
         else:
-            os.makedirs(self.destination_path)
+            os.makedirs(self.destination_path, exist_ok=True)
             print("")
             print("Destination path '{}' created successfully!".format(self.destination_path))
             print("")
-
-
-
 
     # return the list of all split files in the dir that
     # that matches the split version number
@@ -234,8 +234,11 @@ class KineticsDatasetManager(object):
         """
 
         # ask user to enter the range of the dataset they want to download
-        user_input = str(input("Please choose a range of the dataset classes you want to download, eg. 1 or 1-100: "))
-        print()
+        if self.unattended:
+            user_input = self.range
+        else:
+            user_input = str(input("Please choose a range of the dataset classes you want to download, eg. 1 or 1-100: "))
+            print()
 
         # now some validation
         # trim out all spaces

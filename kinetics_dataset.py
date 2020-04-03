@@ -46,10 +46,18 @@ if __name__ == "__main__":
     ap.add_argument("--cookies", type=str, default=None, help="Enter destination to a cookies.txt file")
     ap.add_argument("--sleep", type=float, default=None, help="Sleep duration between downloads (in secondes).")
     ap.add_argument("-t", "--type", type=str, required=True, default=None, help="Enter train, validation or test")
+    ap.add_argument("--unattended", action="store_true", help="Do not use UI")
+    ap.add_argument("--range", type=str, default=None, help="Range of the dataset classes you want to download, eg. '1' or '1-100'")
     args = vars(ap.parse_args())
 
+    if args["unattended"] and args["range"] is None:
+        ap.error("Need to provide --range when using --unattended.")
+
+    if args["range"] and args["unattended"] is None:
+        print("Warning: --range is ignored when --unattended is not provided")
+
     # instantiate the manager class
-    kinetics_manager = KineticsDatasetManager(args["destination"], args["type"], args["cookies"], args["sleep"])
+    kinetics_manager = KineticsDatasetManager(args["destination"], args["type"], args["cookies"], args["sleep"], args["range"], args["unattended"])
 
     kinetics_manager.download_video()
 
