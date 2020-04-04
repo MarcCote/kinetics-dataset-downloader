@@ -354,7 +354,7 @@ class KineticsDatasetManager(object):
                     stdout, stderr = p.communicate()
 
                     if p.returncode != 0:
-                        if "Too Many Requests" in (stdout.decode("cp1252") + stderr.decode("cp1252")):
+                        if "Too Many Requests" in (stdout.decode("utf-8") + stderr.decode("utf-8")):
                             msg += colored("[FAIL]", 'red')
                             pbar.write(msg)
                             pbar.close()
@@ -362,7 +362,7 @@ class KineticsDatasetManager(object):
                             sys.exit(1)
                         else:
                             # Missing video, create an empty video file to skip it next time.
-                            msg += colored("[FAIL] - " + stderr.decode("cp1252"), 'yellow')
+                            msg += colored("[FAIL] - " + stderr.decode("utf-8"), 'yellow')
                             Path(vid_path).touch()
                     else:
                         msg += colored("[DONE]", 'green')
